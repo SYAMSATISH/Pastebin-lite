@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pastebin Lite
 
-## Getting Started
+A fast and secure pastebin application built with Next.js 15.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- *Create Pastes*: Share text snippets easily.
+- *Ephemeral Storage*: Set expiration time (TTL) for pastes.
+- *View Limits*: Set a maximum number of views before the paste disappears (Burn-after-reading).
+- *Secure*: Pastes are rendered safely without executing scripts.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Running Locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies: npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Run the development server: npm run dev
 
-## Learn More
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+## Persistence Layer
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This application supports two persistence modes:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Vercel KV (Redis)**: Recommended for production deployments on Vercel. 
+   - Enabled automatically if `KV_REST_API_URL` and `KV_REST_API_TOKEN` environment variables are present.
+   - Provides durable, scalable storage.
 
-## Deploy on Vercel
+2. **Local File System (JSON)**: Used for local development (fallback).
+   - Stores pastes in `data/store.json` in the project root.
+   - Persists across restarts in a local environment.
+   - Not suitable for serverless functions (use Redis instead).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Design Decisions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Deterministic Testing**: The application supports `TEST_MODE=1` and `x-test-now-ms` header to simulate time travel for validating expiry logic.
+- **Atomic-ish View Counting**: View counts are updated upon fetch. For high-concurrency production usage, Redis atomic increment is recommended, but the current implementation uses a read-modify-write approach which is sufficient for "Lite" usage and consistent across both storage adapters.
+- **Next.js App Router**: Utilizes Server Components for optimal performance and SEO.
+- **Tailwind CSS**: Used for modern, responsive, and dark-themed UI.
+
+## API Endpoints
+
+- `GET /api/healthz` - Health check.
+- `POST /api/pastes` - Create a paste.
+- `GET /api/pastes/:id` - Fetch a paste (consumes specific view count).
